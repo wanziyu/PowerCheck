@@ -48,7 +48,9 @@ public class PowerCheck {
         DataStream<PowerBean> powerBeanDataStream = assignWatermark(originalPowerBeans);
 
         if (!Boolean.parseBoolean(getProperties().getProperty("onlyWindowFunction"))) {
-            FlinkKafkaProducer powerBeanProducer = getKafkaProducer(PowerBean.class.getSimpleName(), 5);
+            FlinkKafkaProducer powerBeanProducer = getKafkaProducer(
+                    PowerBean.class.getSimpleName(), FlinkKafkaProducer.Semantic.AT_LEAST_ONCE, 5
+            );
             powerBeanDataStream.addSink(powerBeanProducer);
         }
 
@@ -67,7 +69,9 @@ public class PowerCheck {
             SingleOutputStreamOperator<WindowBean> windowOut = windowedStream.aggregate(
                     new MyFunctions.WindowAggregate(), new MyFunctions.WindowProcess()
             );
-            FlinkKafkaProducer windowBeanProducer = getKafkaProducer(WindowBean.class.getSimpleName(), 5);
+            FlinkKafkaProducer windowBeanProducer = getKafkaProducer(
+                    WindowBean.class.getSimpleName(), FlinkKafkaProducer.Semantic.AT_LEAST_ONCE, 5
+            );
             windowOut.addSink(windowBeanProducer);
         }
 
@@ -107,7 +111,6 @@ public class PowerCheck {
         else
             // 添加划窗计算的功能，默认为不开启  通过命令行参数传入 -enable.windowFunction true  开启功能
             prop.setProperty("enable.windowFunction", fromArgs.get("enable.windowFunction", "false"));
-
 
 
         return prop;

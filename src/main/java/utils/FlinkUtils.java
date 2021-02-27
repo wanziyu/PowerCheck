@@ -86,7 +86,7 @@ public class FlinkUtils {
         return watermarksStream;
     }
 
-    public static FlinkKafkaProducer getKafkaProducer(String topicBean, int kafkaProducersPoolSize) {
+    public static FlinkKafkaProducer getKafkaProducer(String topicBean, FlinkKafkaProducer.Semantic semantic, int kafkaProducersPoolSize) {
         FlinkKafkaProducer producer;
         if ("powerbean".equals(topicBean.toLowerCase()))
              producer = new FlinkKafkaProducer(
@@ -94,7 +94,7 @@ public class FlinkUtils {
                     new MyFunctions.MySerializationSchema<PowerBean>(),
                     properties,
                     new MyFunctions.KafkaPmuIdPartitioner<PowerBean>(),
-                    FlinkKafkaProducer.Semantic.EXACTLY_ONCE,
+                    semantic,
                     kafkaProducersPoolSize
             );
         else if ("windowbean".equals(topicBean.toLowerCase()))
@@ -103,7 +103,7 @@ public class FlinkUtils {
                     new MyFunctions.MySerializationSchema<WindowBean>(),
                     properties,
                     new MyFunctions.KafkaPmuIdPartitioner<WindowBean>(),
-                    FlinkKafkaProducer.Semantic.EXACTLY_ONCE,
+                    semantic,
                     kafkaProducersPoolSize
             );
         else
