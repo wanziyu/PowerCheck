@@ -42,7 +42,8 @@ public class FlinkUtils {
         if (checkpointingMode == CheckpointingMode.EXACTLY_ONCE) {
             if (properties.getProperty("enable.auto.submit") != "false")
                 properties.setProperty("enable.auto.submit", "false");
-        }
+        } else
+            properties.setProperty("enable.auto.submit", "true");
         FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>(topic, new SimpleStringSchema(), properties);
         DataStreamSource<String> dataStreamSource = env.addSource(consumer);
         return dataStreamSource;
@@ -89,7 +90,7 @@ public class FlinkUtils {
     public static FlinkKafkaProducer getKafkaProducer(String topicBean, FlinkKafkaProducer.Semantic semantic, int kafkaProducersPoolSize) {
         FlinkKafkaProducer producer;
         if ("powerbean".equals(topicBean.toLowerCase()))
-             producer = new FlinkKafkaProducer(
+            producer = new FlinkKafkaProducer(
                     properties.getProperty("sink.powerBean.topic"),
                     new MyFunctions.MySerializationSchema<PowerBean>(),
                     properties,

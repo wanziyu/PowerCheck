@@ -6,6 +6,7 @@ import bean.SourceBean;
 import bean.WindowBean;
 import com.alibaba.fastjson.JSON;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -13,10 +14,13 @@ import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import utils.MyFunctions;
 
@@ -34,7 +38,13 @@ public class PowerCheck {
         Properties prop = completeProps(fromArgs);
         setProperties(prop);
 
-        enableKafkaExactlyOnce(Long.parseLong(getProperties().getProperty("checkpointInterval", "10000")));
+        FlinkKafkaProducer.Semantic producerSemantic;
+        if (Boolean.parseBoolean(getProperties().getProperty("enable.checkpoint"))) {
+            enableKafkaExactlyOnce(Long.parseLong(getProperties().getProperty("checkpointInterval", "10000")));
+            producerSemantic = FlinkKafkaProducer.Semantic.EXACTLY_ONCE;
+        } else
+            producerSemantic = FlinkKafkaProducer.Semantic.AT_LEAST_ONCE;
+
 
         DataStream<String> line = dataStreamFromKafka();
 
@@ -45,18 +55,28 @@ public class PowerCheck {
                 return sourceToPower(sourceBean);
             }
         });
-        DataStream<PowerBean> powerBeanDataStream = assignWatermark(originalPowerBeans);
+        DataStream<PowerBean> inputStream = assignWatermark(originalPowerBeans);
+        // final OutputTag<PowerBean> streamSide = new OutputTag<PowerBean>("stream");
+        final OutputTag<PowerBean> windowSide = new OutputTag<PowerBean>("window");
+        SingleOutputStreamOperator<PowerBean> mainStream = inputStream.process(new ProcessFunction<PowerBean, PowerBean>() {
+            @Override
+            public void processElement(PowerBean powerBean, Context context, Collector<PowerBean> collector) throws Exception {
+                collector.collect(powerBean);
+                context.output(windowSide, powerBean);
+            }
+        });
 
-        if (!Boolean.parseBoolean(getProperties().getProperty("onlyWindowFunction"))) {
+        if (!Boolean.parseBoolean(getProperties().getProperty("onlyWindowFunction", "false"))) {
             FlinkKafkaProducer powerBeanProducer = getKafkaProducer(
-                    PowerBean.class.getSimpleName(), FlinkKafkaProducer.Semantic.AT_LEAST_ONCE, 5
+                    PowerBean.class.getSimpleName(), producerSemantic, 5
             );
-            powerBeanDataStream.addSink(powerBeanProducer);
+            mainStream.addSink(powerBeanProducer);
         }
 
 
         if (Boolean.parseBoolean(getProperties().getProperty("enable.windowFunction", "false"))) {
-            WindowedStream<PowerBean, Integer, TimeWindow> windowedStream = powerBeanDataStream
+            DataStream<PowerBean> windowStream = mainStream.getSideOutput(windowSide);
+            WindowedStream<PowerBean, Integer, TimeWindow> windowedStream = windowStream
                     .keyBy(new KeySelector<PowerBean, Integer>() {
                         @Override
                         public Integer getKey(PowerBean bean) throws Exception {
@@ -70,7 +90,7 @@ public class PowerCheck {
                     new MyFunctions.WindowAggregate(), new MyFunctions.WindowProcess()
             );
             FlinkKafkaProducer windowBeanProducer = getKafkaProducer(
-                    WindowBean.class.getSimpleName(), FlinkKafkaProducer.Semantic.AT_LEAST_ONCE, 5
+                    WindowBean.class.getSimpleName(), producerSemantic, 5
             );
             windowOut.addSink(windowBeanProducer);
         }
@@ -84,7 +104,7 @@ public class PowerCheck {
         Properties prop = new Properties();
 
         prop.setProperty("source.topic", fromArgs.get("source.topic", "topic-A"));
-        prop.setProperty("bootstrap.servers", fromArgs.get("bootstrap.servers", "kafka-1.kafka-headless.default.svc.cluster.local:9092,kafka-2.kafka-headless.default.svc.cluster.local:9092,kafka-3.kafka-headless.default.svc.cluster.local:9092"));
+        prop.setProperty("bootstrap.servers", fromArgs.get("bootstrap.servers", "192.168.1.103:31090,192.168.1.103:31091,192.168.1.103:31092"));
         prop.setProperty("group.id", fromArgs.get("group.id", "demo1"));
         prop.setProperty("auto.offset.reset", fromArgs.get("auto.offset.reset", "earliest"));
         prop.setProperty("enable.auto.submit", fromArgs.get("enable.auto.submit", "false"));
@@ -112,6 +132,7 @@ public class PowerCheck {
             // 添加划窗计算的功能，默认为不开启  通过命令行参数传入 -enable.windowFunction true  开启功能
             prop.setProperty("enable.windowFunction", fromArgs.get("enable.windowFunction", "false"));
 
+        prop.setProperty("enable.checkpoint", fromArgs.get("enable.checkpoint", "false"));
 
         return prop;
     }

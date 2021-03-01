@@ -53,7 +53,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass>paper.WindowTest</mainClass>
+                  <mainClass>paper.PowerCheck</mainClass>
                 </transformer>
               </transformers>
             </configuration>
