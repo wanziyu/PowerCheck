@@ -56,8 +56,8 @@ public class PowerCheck {
             }
         });
         DataStream<PowerBean> inputStream = assignWatermark(originalPowerBeans);
-        // final OutputTag<PowerBean> streamSide = new OutputTag<PowerBean>("stream");
-        final OutputTag<PowerBean> windowSide = new OutputTag<PowerBean>("window");
+        // final OutputTag<PowerBean> streamSide = new OutputTag<PowerBean>("stream"){};
+        final OutputTag<PowerBean> windowSide = new OutputTag<PowerBean>("window"){};
         SingleOutputStreamOperator<PowerBean> mainStream = inputStream.process(new ProcessFunction<PowerBean, PowerBean>() {
             @Override
             public void processElement(PowerBean powerBean, Context context, Collector<PowerBean> collector) throws Exception {
