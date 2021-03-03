@@ -55,28 +55,19 @@ public class PowerCheck {
                 return sourceToPower(sourceBean);
             }
         });
-        DataStream<PowerBean> inputStream = assignWatermark(originalPowerBeans);
-        // final OutputTag<PowerBean> streamSide = new OutputTag<PowerBean>("stream"){};
-        final OutputTag<PowerBean> windowSide = new OutputTag<PowerBean>("window"){};
-        SingleOutputStreamOperator<PowerBean> mainStream = inputStream.process(new ProcessFunction<PowerBean, PowerBean>() {
-            @Override
-            public void processElement(PowerBean powerBean, Context context, Collector<PowerBean> collector) throws Exception {
-                collector.collect(powerBean);
-                context.output(windowSide, powerBean);
-            }
-        });
 
         if (!Boolean.parseBoolean(getProperties().getProperty("onlyWindowFunction", "false"))) {
             FlinkKafkaProducer powerBeanProducer = getKafkaProducer(
                     PowerBean.class.getSimpleName(), producerSemantic, 5
             );
-            mainStream.addSink(powerBeanProducer);
+            originalPowerBeans.addSink(powerBeanProducer);
         }
+
+        DataStream<PowerBean> inputStream = assignWatermark(originalPowerBeans);
 
 
         if (Boolean.parseBoolean(getProperties().getProperty("enable.windowFunction", "false"))) {
-            DataStream<PowerBean> windowStream = mainStream.getSideOutput(windowSide);
-            WindowedStream<PowerBean, Integer, TimeWindow> windowedStream = windowStream
+            WindowedStream<PowerBean, Integer, TimeWindow> windowedStream = inputStream
                     .keyBy(new KeySelector<PowerBean, Integer>() {
                         @Override
                         public Integer getKey(PowerBean bean) throws Exception {

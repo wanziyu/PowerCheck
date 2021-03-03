@@ -12,7 +12,8 @@ public class CsvUtils {
         String[] fields = line.split(",");
 //        long SOC = Long.parseLong(fields[0]);
 //        int FRACSEC = Integer.parseInt(fields[1]);
-        long Timestamp = Long.parseLong(fields[0] + fields[1]);
+//        long Timestamp = Long.parseLong(fields[0] + fields[1]);
+        long Timestamp = Long.parseLong(fields[0]) * 1000 + Long.parseLong(fields[1]);
 
         double Mag_VA1 = Double.parseDouble(fields[6]);
         double Phase_VA1 = Double.parseDouble(fields[7]);
