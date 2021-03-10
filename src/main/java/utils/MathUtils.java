@@ -55,8 +55,7 @@ public class MathUtils {
         double actPowerSum = actPower[0] + actPower[1] + actPower[2];
         double reaPowerSum = reaPower[0] + reaPower[1] + reaPower[2];
         double PF = actPowerSum / appPowerSum;
-        Date date = new Date();
-        long flinkProcessTime = date.getTime();
+        long flinkProcessTime = System.currentTimeMillis();
         long flinkDelayTime = flinkProcessTime - bean.Timestamp;
         double unbalanceRate = calUnbalanceRate(bean);
 
