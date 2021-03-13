@@ -112,4 +112,7 @@ public class FlinkUtils {
         return producer;
     }
 
+    public static InfluxDBSink getInfluxDBSink(){
+        return new InfluxDBSink(properties.getProperty("influxdb.addr"), properties.getProperty("influxdb.dataBase"));
+    }
 }

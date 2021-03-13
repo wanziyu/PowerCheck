@@ -22,6 +22,7 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import utils.InfluxDBSink;
 import utils.MyFunctions;
 
 import java.util.Optional;
@@ -57,10 +58,11 @@ public class PowerCheck {
         });
 
         if (!Boolean.parseBoolean(getProperties().getProperty("onlyWindowFunction", "false"))) {
-            FlinkKafkaProducer powerBeanProducer = getKafkaProducer(
-                    PowerBean.class.getSimpleName(), producerSemantic, 5
-            );
-            originalPowerBeans.addSink(powerBeanProducer);
+//            FlinkKafkaProducer powerBeanProducer = getKafkaProducer(
+//                    PowerBean.class.getSimpleName(), producerSemantic, 5
+//            );
+//            originalPowerBeans.addSink(powerBeanProducer);
+            originalPowerBeans.addSink(getInfluxDBSink());
         }
 
         DataStream<PowerBean> inputStream = assignWatermark(originalPowerBeans);
@@ -124,6 +126,8 @@ public class PowerCheck {
             prop.setProperty("enable.windowFunction", fromArgs.get("enable.windowFunction", "false"));
 
         prop.setProperty("enable.checkpoint", fromArgs.get("enable.checkpoint", "false"));
+        prop.setProperty("influxdb.addr", fromArgs.get("influxdb.addr", "http://192.168.1.109:32621"));
+        prop.setProperty("influxdb.dataBase", fromArgs.get("influxdb.dataBase", "PMU_Power"));
 
         return prop;
     }
