@@ -13,7 +13,6 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import bean.PowerBean;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 
-import java.util.Optional;
 import java.util.Properties;
 
 
@@ -44,6 +43,7 @@ public class FlinkUtils {
                 properties.setProperty("enable.auto.submit", "false");
         } else
             properties.setProperty("enable.auto.submit", "true");
+
         FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>(topic, new SimpleStringSchema(), properties);
         DataStreamSource<String> dataStreamSource = env.addSource(consumer);
         return dataStreamSource;
@@ -112,7 +112,11 @@ public class FlinkUtils {
         return producer;
     }
 
-    public static InfluxDBSink getInfluxDBSink(){
-        return new InfluxDBSink(properties.getProperty("influxdb.addr"), properties.getProperty("influxdb.dataBase"));
+    public static StreamInfluxDBSink getStreamInfluxDBSink(){
+        return new StreamInfluxDBSink(properties.getProperty("influxdb.addr"), properties.getProperty("influxdb.dataBase"));
+    }
+
+    public static WindowInfluxDBSink getWindowInfluxDBSink(){
+        return new WindowInfluxDBSink(properties.getProperty("influxdb.addr"), properties.getProperty("influxdb.dataBase"));
     }
 }

@@ -6,26 +6,18 @@ import bean.SourceBean;
 import bean.WindowBean;
 import com.alibaba.fastjson.JSON;
 
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
-import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
-import org.apache.flink.util.Collector;
-import org.apache.flink.util.OutputTag;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import utils.InfluxDBSink;
 import utils.MyFunctions;
 
-import java.util.Optional;
 import java.util.Properties;
 
 import static utils.FlinkUtils.*;
@@ -40,6 +32,7 @@ public class PowerCheck {
         setProperties(prop);
 
         FlinkKafkaProducer.Semantic producerSemantic;
+
         if (Boolean.parseBoolean(getProperties().getProperty("enable.checkpoint"))) {
             enableKafkaExactlyOnce(Long.parseLong(getProperties().getProperty("checkpointInterval", "10000")));
             producerSemantic = FlinkKafkaProducer.Semantic.EXACTLY_ONCE;
@@ -62,7 +55,7 @@ public class PowerCheck {
 //                    PowerBean.class.getSimpleName(), producerSemantic, 5
 //            );
 //            originalPowerBeans.addSink(powerBeanProducer);
-            originalPowerBeans.addSink(getInfluxDBSink());
+            originalPowerBeans.addSink(getStreamInfluxDBSink());
         }
 
         DataStream<PowerBean> inputStream = assignWatermark(originalPowerBeans);
@@ -86,6 +79,7 @@ public class PowerCheck {
                     WindowBean.class.getSimpleName(), producerSemantic, 5
             );
             windowOut.addSink(windowBeanProducer);
+            windowOut.addSink(getWindowInfluxDBSink());
         }
 
         executeJob();
@@ -97,7 +91,7 @@ public class PowerCheck {
         Properties prop = new Properties();
 
         prop.setProperty("source.topic", fromArgs.get("source.topic", "topic-A"));
-        prop.setProperty("bootstrap.servers", fromArgs.get("bootstrap.servers", "192.168.1.103:31090,192.168.1.103:31091,192.168.1.103:31092"));
+        prop.setProperty("bootstrap.servers", fromArgs.get("bootstrap.servers", "10.66.101.210:31090,10.66.101.210:31091,10.66.101.210:31092"));
         prop.setProperty("group.id", fromArgs.get("group.id", "demo1"));
         prop.setProperty("auto.offset.reset", fromArgs.get("auto.offset.reset", "earliest"));
         prop.setProperty("enable.auto.submit", fromArgs.get("enable.auto.submit", "false"));
@@ -126,7 +120,7 @@ public class PowerCheck {
             prop.setProperty("enable.windowFunction", fromArgs.get("enable.windowFunction", "false"));
 
         prop.setProperty("enable.checkpoint", fromArgs.get("enable.checkpoint", "false"));
-        prop.setProperty("influxdb.addr", fromArgs.get("influxdb.addr", "http://192.168.1.109:32621"));
+        prop.setProperty("influxdb.addr", fromArgs.get("influxdb.addr", "http://10.66.101.230:30268"));
         prop.setProperty("influxdb.dataBase", fromArgs.get("influxdb.dataBase", "PMU_Power"));
 
         return prop;

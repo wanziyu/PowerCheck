@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaPartitioner;
@@ -17,37 +18,41 @@ import java.nio.charset.StandardCharsets;
 public class MyFunctions {
 
     public static class WindowAggregate implements AggregateFunction<PowerBean,
-            Tuple3<Desc, Desc, Desc>, WindowBean> {
+            Tuple4<Desc, Desc, Desc, Desc>, WindowBean> {
 
         @Override
-        public Tuple3<Desc, Desc, Desc> createAccumulator() {
-            return Tuple3.of(new Desc(), new Desc(), new Desc());
+        public Tuple4<Desc, Desc, Desc, Desc> createAccumulator() {
+            return Tuple4.of(new Desc(), new Desc(), new Desc(), new Desc());
         }
 
         @Override
-        public Tuple3<Desc, Desc, Desc> add(PowerBean bean, Tuple3<Desc, Desc, Desc> desc3) {
-            Desc act = desc3.f0;
-            Desc rea = desc3.f1;
-            Desc app = desc3.f2;
+        public Tuple4<Desc, Desc, Desc, Desc> add(PowerBean bean, Tuple4<Desc, Desc, Desc, Desc> desc4) {
+            Desc act = desc4.f0;
+            Desc rea = desc4.f1;
+            Desc app = desc4.f2;
+            Desc pf = desc4.f3;
             act.update(bean.ActPower_Sum);
             rea.update(bean.ReaPower_Sum);
             app.update(bean.AppPower_Sum);
-            return desc3;
+            pf.update(bean.PF);
+            return desc4;
         }
 
         @Override
-        public WindowBean getResult(Tuple3<Desc, Desc, Desc> desc3) {
+        public WindowBean getResult(Tuple4<Desc, Desc, Desc, Desc> desc4) {
+            //pmu_id 此时 先暂存为-1, process时赋值
             return WindowBean.of(-1, 0L,
-                    desc3.f0.average(), desc3.f1.average(), desc3.f2.average(),
-                    desc3.f0.max, desc3.f1.max, desc3.f2.max,
-                    desc3.f0.min, desc3.f1.min, desc3.f2.min);
+                    desc4.f0.average(), desc4.f1.average(), desc4.f2.average(), desc4.f3.average(),
+                    desc4.f0.max, desc4.f1.max, desc4.f2.max, desc4.f3.max,
+                    desc4.f0.min, desc4.f1.min, desc4.f2.min, desc4.f3.min);
         }
 
         @Override
-        public Tuple3<Desc, Desc, Desc> merge(Tuple3<Desc, Desc, Desc> d1, Tuple3<Desc, Desc, Desc> d2) {
+        public Tuple4<Desc, Desc, Desc, Desc> merge(Tuple4<Desc, Desc, Desc, Desc> d1, Tuple4<Desc, Desc, Desc, Desc> d2) {
             d1.f0.merge(d2.f0);
             d1.f1.merge(d2.f1);
             d1.f2.merge(d2.f2);
+            d1.f3.merge(d2.f3);
             return d1;
         }
     }

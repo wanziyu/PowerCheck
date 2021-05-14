@@ -9,12 +9,12 @@ import org.influxdb.dto.Point;
 
 import java.util.concurrent.TimeUnit;
 
-public class InfluxDBSink extends RichSinkFunction<PowerBean> {
+public class StreamInfluxDBSink extends RichSinkFunction<PowerBean> {
     private InfluxDB connect = null;
     private String dataBaseName;
     private String dbURL;
 
-    public InfluxDBSink(String dbURL, String dataBaseName) {
+    public StreamInfluxDBSink(String dbURL, String dataBaseName) {
         this.dbURL = dbURL;
         this.dataBaseName = dataBaseName;
     }
@@ -34,7 +34,7 @@ public class InfluxDBSink extends RichSinkFunction<PowerBean> {
 
     @Override
     public void invoke(PowerBean value, Context context) throws Exception {
-        Point.Builder builder = Point.measurement("PMUTest")
+        Point.Builder builder = Point.measurement("PMUStream")
                 .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
                 .tag("PMUID", Integer.toString(value.PMU_ID))
                 .addField("Latency", System.currentTimeMillis() - value.Timestamp)
