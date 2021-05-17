@@ -1,6 +1,5 @@
 package utils;
 
-import bean.PowerBean;
 import bean.WindowBean;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
@@ -37,12 +36,12 @@ public class WindowInfluxDBSink extends RichSinkFunction<WindowBean> {
     public void invoke(WindowBean value, Context context) throws Exception {
         Point.Builder builder = Point.measurement("PMUWindow")
                 .time(System.currentTimeMillis(), TimeUnit.MILLISECONDS)
-                .tag("PMUID", Integer.toString(value.PMU_ID))
+                .tag("PMUID", Integer.toString(value.pmuId))
                 .addField("Zone", 1)
-                .addField("ActAverage", (float) value.ActAverage)
-                .addField("ReaAverage", (float) value.ReaAverage)
-                .addField("AppAverage", (float) value.AppAverage)
-                .addField("PFAverage", (float) value.PFAverage)
+                .addField("ActAverage", (float) value.actAverage)
+                .addField("ReaAverage", (float) value.reaAverage)
+                .addField("AppAverage", (float) value.appAverage)
+                .addField("PFAverage", (float) value.pfAverage)
                 .addField("WindowStart", value.windowStartTimestamp);
 
         Point p = builder.build();

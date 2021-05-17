@@ -90,7 +90,7 @@ public class PowerCheck {
 
         Properties prop = new Properties();
 
-        prop.setProperty("source.topic", fromArgs.get("source.topic", "topic-A"));
+        prop.setProperty("source.topic", fromArgs.get("source.topic", "PMU-data"));
         prop.setProperty("bootstrap.servers", fromArgs.get("bootstrap.servers", "10.66.101.210:31090,10.66.101.210:31091,10.66.101.210:31092"));
         prop.setProperty("group.id", fromArgs.get("group.id", "demo1"));
         prop.setProperty("auto.offset.reset", fromArgs.get("auto.offset.reset", "earliest"));

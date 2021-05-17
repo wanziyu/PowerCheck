@@ -10,22 +10,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class WindowBean implements PmuIdBean {
 
-    public int PMU_ID;
+
+    public int pmuId;
     public long windowStartTimestamp;
-    public double ActAverage;
-    public double ReaAverage;
-    public double AppAverage;
-    public double PFAverage;
 
-    public double ActHigh;
-    public double ReaHigh;
-    public double AppHigh;
-    public double PFHigh;
+    public double actAverage;
+    public double reaAverage;
+    public double appAverage;
+    public double pfAverage;
 
-    public double ActLow;
-    public double ReaLow;
-    public double AppLow;
-    public double PFLow;
+    public double actHigh;
+    public double reaHigh;
+    public double appHigh;
+    public double pfHigh;
+
+    public double actLow;
+    public double reaLow;
+    public double appLow;
+    public double pfLow;
 
 
 
@@ -39,6 +41,7 @@ public class WindowBean implements PmuIdBean {
                 actLow, reaLow, appLow, PFLow);
     }
 
+
     @Override
     public String toString() {
         return JSON.toJSONString(this);
@@ -46,7 +49,7 @@ public class WindowBean implements PmuIdBean {
 
     @Override
     public int getPmuId() {
-        return this.PMU_ID;
+        return this.pmuId;
     }
 
     public static void main(String[] args) {

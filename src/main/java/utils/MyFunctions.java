@@ -4,7 +4,6 @@ import bean.PmuIdBean;
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.serialization.SerializationSchema;
-import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
@@ -61,13 +60,13 @@ public class MyFunctions {
         @Override
         public void process(Integer pmu_id, Context context, Iterable<WindowBean> elements, Collector<WindowBean> out) throws Exception {
             WindowBean windowBean = elements.iterator().next();
-            windowBean.PMU_ID = pmu_id;
+            windowBean.pmuId = pmu_id;
             windowBean.windowStartTimestamp = context.window().getStart();
             out.collect(windowBean);
         }
     }
 
-    private static class Desc {
+    public static class Desc {
         public double sum;
         public double min;
         public double max;

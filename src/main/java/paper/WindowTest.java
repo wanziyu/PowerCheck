@@ -36,7 +36,9 @@ public class WindowTest {
         Configuration conf = new Configuration();
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
         env.setParallelism(3);
-        DataStreamSource<String> line = env.readTextFile("D:\\Projects\\PowerCheck\\src\\main\\resources\\2019-03-23_00h_UTC_PMUID02.txt");
+        DataStreamSource<String> line = env.readTextFile("D:\\Project\\PowerCheck\\src\\main\\resources\\2019-03-23_00h_UTC_PMUID02.txt");
+
+//        line.print();
 
         SingleOutputStreamOperator<PowerBean> originalPowerBeans = line.map(new MapFunction<String, PowerBean>() {
             @Override
@@ -45,6 +47,7 @@ public class WindowTest {
                 return sourceToPower(sourceBean);
             }
         });
+
 
         SingleOutputStreamOperator<PowerBean> marked = originalPowerBeans.assignTimestampsAndWatermarks(
                 new BoundedOutOfOrdernessTimestampExtractor<PowerBean>(Time.milliseconds(0L)) {
@@ -55,7 +58,7 @@ public class WindowTest {
                 }
         ).setParallelism(1);
 
-        marked.writeAsText("stream");
+//        marked.print();
         KeyedStream<PowerBean, Integer> keyed = marked
                 .keyBy(new KeySelector<PowerBean, Integer>() {
                     @Override
@@ -72,15 +75,16 @@ public class WindowTest {
         SingleOutputStreamOperator<WindowBean> windowOut = windowedStream.aggregate(
                 new MyFunctions.WindowAggregate(), new MyFunctions.WindowProcess()
         );
-        SingleOutputStreamOperator<String> out = windowOut.map(new MapFunction<WindowBean, String>() {
-            @Override
-            public String map(WindowBean value) throws Exception {
-                return JSON.toJSONString(value);
-            }
-        });
+//        SingleOutputStreamOperator<String> out = windowOut.map(new MapFunction<WindowBean, String>() {
+//            @Override
+//            public String map(WindowBean value) throws Exception {
+//                return JSON.toJSONString(value);
+//            }
+//        });
 
-        out.writeAsText("window");
+        windowOut.writeAsText("window");
 
+//        out.print();
         env.execute("windowWordCount");
 
     }
