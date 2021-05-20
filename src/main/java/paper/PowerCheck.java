@@ -7,8 +7,10 @@ import bean.WindowBean;
 import com.alibaba.fastjson.JSON;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.datastream.WindowedStream;
@@ -16,6 +18,8 @@ import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindow
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.MyFunctions;
 
 import java.util.Properties;
@@ -72,9 +76,25 @@ public class PowerCheck {
                             Time.milliseconds(Long.parseLong(getProperties().getProperty("lengthOfWindow", "60000"))),
                             Time.milliseconds(Long.parseLong(getProperties().getProperty("lengthOfWindowSlide", "30000")))));
 
-            SingleOutputStreamOperator<WindowBean> windowOut = windowedStream.aggregate(
+            SingleOutputStreamOperator<WindowBean> windowOutTmp = windowedStream.aggregate(
                     new MyFunctions.WindowAggregate(), new MyFunctions.WindowProcess()
             );
+
+            SingleOutputStreamOperator<WindowBean> windowOut = windowOutTmp.map(new RichMapFunction<WindowBean, WindowBean>() {
+                Logger log;
+
+                @Override
+                public void open(Configuration parameters) throws Exception {
+                    log = LoggerFactory.getLogger("windowOut");
+                }
+
+                @Override
+                public WindowBean map(WindowBean value) throws Exception {
+                    log.info(value.toString());
+                    return value;
+                }
+            });
+
             FlinkKafkaProducer windowBeanProducer = getKafkaProducer(
                     WindowBean.class.getSimpleName(), producerSemantic, 5
             );

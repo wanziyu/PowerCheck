@@ -6,6 +6,7 @@ import bean.WindowBean;
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -21,6 +22,8 @@ import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Int;
 import scala.collection.immutable.Stream;
 import utils.MyFunctions;
@@ -33,10 +36,12 @@ import static utils.MathUtils.sourceToPower;
 
 public class WindowTest {
     public static void main(String[] args) throws Exception {
-        Configuration conf = new Configuration();
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+//        Configuration conf = new Configuration();
+//        StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(conf);
+        StreamExecutionEnvironment env = getEnv();
         env.setParallelism(3);
-        DataStreamSource<String> line = env.readTextFile("D:\\Project\\PowerCheck\\src\\main\\resources\\2019-03-23_00h_UTC_PMUID02.txt");
+
+        DataStreamSource<String> line = env.readTextFile(args[0]);
 
 //        line.print();
 
@@ -75,16 +80,23 @@ public class WindowTest {
         SingleOutputStreamOperator<WindowBean> windowOut = windowedStream.aggregate(
                 new MyFunctions.WindowAggregate(), new MyFunctions.WindowProcess()
         );
-//        SingleOutputStreamOperator<String> out = windowOut.map(new MapFunction<WindowBean, String>() {
-//            @Override
-//            public String map(WindowBean value) throws Exception {
-//                return JSON.toJSONString(value);
-//            }
-//        });
+        SingleOutputStreamOperator<String> out = windowOut.map(new RichMapFunction<WindowBean, String>() {
+            Logger log;
+            @Override
+            public void open(Configuration parameters) throws Exception {
+                log = LoggerFactory.getLogger("windowOut");
+            }
 
-        windowOut.writeAsText("window");
+            @Override
+            public String map(WindowBean value) throws Exception {
+                log.info(value.toString());
+                return JSON.toJSONString(value);
+            }
+        });
 
-//        out.print();
+//        windowOut.writeAsText("window");
+
+        out.print();
         env.execute("windowWordCount");
 
     }

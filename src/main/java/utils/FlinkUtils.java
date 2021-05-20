@@ -83,7 +83,7 @@ public class FlinkUtils {
                         return element.Timestamp;
                     }
                 }
-        );
+        ).setParallelism(1);
         return watermarksStream;
     }
 
